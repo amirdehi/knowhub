@@ -1,0 +1,129 @@
+-- Core tables
+CREATE TABLE roles (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(50) NOT NULL UNIQUE
+);
+CREATE TABLE users (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  username VARCHAR(50) NOT NULL UNIQUE,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  display_name VARCHAR(100) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE
+);
+CREATE TABLE user_roles (
+  user_id BIGINT NOT NULL,
+  role_id INT NOT NULL,
+  PRIMARY KEY (user_id, role_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+);
+
+CREATE TABLE tags (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(64) NOT NULL UNIQUE
+);
+
+CREATE TABLE experiences (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  author_id BIGINT NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  body MEDIUMTEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL,
+  is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+  FOREIGN KEY (author_id) REFERENCES users(id)
+);
+CREATE TABLE experience_tags (
+  experience_id BIGINT NOT NULL,
+  tag_id BIGINT NOT NULL,
+  PRIMARY KEY (experience_id, tag_id),
+  FOREIGN KEY (experience_id) REFERENCES experiences(id) ON DELETE CASCADE,
+  FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+);
+CREATE TABLE experience_comments (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  experience_id BIGINT NOT NULL,
+  author_id BIGINT NOT NULL,
+  body TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+  FOREIGN KEY (experience_id) REFERENCES experiences(id) ON DELETE CASCADE,
+  FOREIGN KEY (author_id) REFERENCES users(id)
+);
+CREATE TABLE experience_votes (
+  experience_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  vote TINYINT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (experience_id, user_id),
+  FOREIGN KEY (experience_id) REFERENCES experiences(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CHECK (vote IN (-1, 1))
+);
+
+CREATE TABLE questions (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  author_id BIGINT NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  body MEDIUMTEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL,
+  is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+  FOREIGN KEY (author_id) REFERENCES users(id)
+);
+CREATE TABLE question_tags (
+  question_id BIGINT NOT NULL,
+  tag_id BIGINT NOT NULL,
+  PRIMARY KEY (question_id, tag_id),
+  FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
+  FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+);
+CREATE TABLE answers (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  question_id BIGINT NOT NULL,
+  author_id BIGINT NOT NULL,
+  body MEDIUMTEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL,
+  is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+  FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
+  FOREIGN KEY (author_id) REFERENCES users(id)
+);
+CREATE TABLE answer_votes (
+  answer_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  vote TINYINT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (answer_id, user_id),
+  FOREIGN KEY (answer_id) REFERENCES answers(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CHECK (vote IN (-1, 1))
+);
+CREATE TABLE question_votes (
+  question_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  vote TINYINT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (question_id, user_id),
+  FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CHECK (vote IN (-1, 1))
+);
+
+CREATE TABLE audit_logs (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  occurred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  user_id BIGINT NULL,
+  ip VARCHAR(64) NULL,
+  user_agent VARCHAR(255) NULL,
+  action VARCHAR(64) NOT NULL,
+  entity VARCHAR(64) NULL,
+  entity_id BIGINT NULL,
+  details JSON NULL
+);
+
+ALTER TABLE experiences ADD FULLTEXT ft_exp (title, body);
+ALTER TABLE questions   ADD FULLTEXT ft_ques (title, body);
+ALTER TABLE answers     ADD FULLTEXT ft_ans (body);
